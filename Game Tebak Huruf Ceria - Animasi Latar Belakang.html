@@ -1,0 +1,739 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Game Tebak Huruf Ceria - Animasi Latar Belakang</title>
+  <style>
+    /* ========== GLOBAL RESET & FONT ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none; /* mencegah seleksi teks pada tombol/huruf, tetap nyaman untuk anak */
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', 'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 30%, #0b2b3b, #071a24);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Canvas animasi partikel (background interaktif) */
+    #particleCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+      pointer-events: auto; /* agar touch/mouse bisa mendeteksi gerakan untuk partikel */
+    }
+
+    /* kontainer game - di atas animasi */
+    .game-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* kartu game dengan efek kaca (glassmorphism) agar background partikel terlihat keren */
+    .game-card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(6px);
+      border-radius: 56px;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.3);
+      padding: 20px 18px 28px;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    @media (min-width: 600px) {
+      .game-card {
+        padding: 28px 32px 32px;
+      }
+    }
+
+    /* header gemoy */
+    .game-header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .title-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(37, 99, 235, 0.15);
+      backdrop-filter: blur(2px);
+      border-radius: 60px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #1e3a8a;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .title-chip span {
+      width: 10px;
+      height: 10px;
+      background: #f97316;
+      border-radius: 20px;
+      display: inline-block;
+      box-shadow: 0 0 0 2px #ffedd5;
+    }
+
+    h1 {
+      font-size: 26px;
+      background: linear-gradient(135deg, #1e293b, #2d3a5e);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+
+    @media (min-width: 500px) {
+      h1 {
+        font-size: 32px;
+      }
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #334155;
+      font-weight: 500;
+    }
+
+    /* area target huruf */
+    #question {
+      background: #fef9e3;
+      margin: 16px 0 12px;
+      padding: 12px 8px;
+      border-radius: 100px;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.02), 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    #targetLetter {
+      font-weight: 800;
+      font-size: 32px;
+      background: #f97316;
+      display: inline-block;
+      padding: 0 16px;
+      border-radius: 60px;
+      color: white;
+      margin-left: 8px;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .info-pill {
+      background: #eef2ff;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #1e293b;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Kotak huruf - lebih playful */
+    #boxes {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin: 20px 0 16px;
+    }
+
+    .box {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(145deg, #ffffff, #f0f4ff);
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 800;
+      color: #0f3b5c;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      box-shadow: 0 12px 18px -8px rgba(0, 0, 0, 0.2);
+      border: 2px solid rgba(37, 99, 235, 0.3);
+      font-family: monospace;
+      text-transform: uppercase;
+    }
+
+    .box:hover {
+      transform: translateY(-8px) scale(1.02);
+      background: linear-gradient(145deg, #ffe6c7, #fff1e0);
+      border-color: #f97316;
+      box-shadow: 0 20px 25px -12px rgba(249, 115, 22, 0.4);
+    }
+
+    @media (max-width: 550px) {
+      .box {
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+        border-radius: 24px;
+      }
+    }
+
+    @media (max-width: 450px) {
+      .box {
+        width: 55px;
+        height: 55px;
+        font-size: 26px;
+      }
+      #boxes {
+        gap: 10px;
+      }
+    }
+
+    /* pesan dan skor */
+    #message {
+      text-align: center;
+      font-weight: 600;
+      font-size: 15px;
+      margin: 6px 0 4px;
+      min-height: 48px;
+      padding: 6px;
+      background: rgba(255,255,200,0.6);
+      border-radius: 32px;
+    }
+
+    #score {
+      text-align: center;
+      font-weight: 800;
+      font-size: 20px;
+      background: #1e293b;
+      display: inline-block;
+      width: auto;
+      margin: 0 auto 14px;
+      padding: 6px 18px;
+      border-radius: 60px;
+      color: #facc15;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 2px gold, 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .score-container {
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 60px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      transition: 0.15s linear;
+      background: white;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+    }
+
+    #btnRepeat {
+      background: #ffe6c7;
+      color: #b45309;
+      border: 1px solid #fed7aa;
+    }
+
+    #btnNext {
+      background: #2563eb;
+      color: white;
+      box-shadow: 0 8px 18px #1e3a8a40;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: #4a5568;
+      margin-top: 20px;
+      background: rgba(255,255,240,0.7);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 5px 14px;
+      border-radius: 50px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CANVAS ANIMASI PARTIKEL (background interaktif) dari bety.html digabung dan dioptimasi -->
+  <canvas id="particleCanvas"></canvas>
+
+  <div class="game-wrapper">
+    <div class="game-card">
+      <div class="game-header">
+        <div class="title-chip">
+          <span></span>
+          ✨ ANAK CERDAS ✨
+        </div>
+        <h1>Tebak Huruf Ceria</h1>
+        <p class="subtitle">Dengar & pilih huruf yang tepat! 🌟</p>
+      </div>
+
+      <p id="question">
+        🔤 Tebak huruf: <span id="targetLetter">A</span>
+      </p>
+
+      <div class="info-row">
+        <div class="info-pill">🎧 Ada audio panduan</div>
+        <div class="info-pill">🌈 Sentuh layar, muncul warna!</div>
+      </div>
+
+      <div id="boxes"></div>
+
+      <div id="message"></div>
+      <div class="score-container">
+        <div id="score">🏆 Skor: 0</div>
+      </div>
+
+      <div class="button-row">
+        <button id="btnRepeat">
+          🔊 Ulangi Suara
+        </button>
+        <button id="btnNext">
+          ➡️ Soal Berikutnya
+        </button>
+      </div>
+
+      <div class="footer-note">
+        💡 Sentuh / gerakkan jari di area warna-warni untuk efek partikel keren!
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======================= 1. ANIMASI PARTIKEL (Gabungan dari bety.html + improvement) =======================
+    (function initParticleBackground() {
+      const canvas = document.getElementById('particleCanvas');
+      let ctx = canvas.getContext('2d');
+      let w, h;
+      let particlesArray = [];
+      let hue = 0;
+      let mouse = { x: undefined, y: undefined };
+      let isTouchDevice = false;
+
+      function resizeCanvas() {
+        w = window.innerWidth;
+        h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+      }
+
+      // Partikel class dengan efek lebih meriah dan sesuai game anak
+      class Particle {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.size = Math.random() * 12 + 4;     // ukuran bervariasi 4-16px
+          this.speedX = (Math.random() - 0.5) * 4.5;
+          this.speedY = (Math.random() - 0.5) * 4.5 - 1.2;
+          this.opacity = 1;
+          this.hueOffset = Math.random() * 60;
+          this.shrink = 0.96 + Math.random() * 0.08;
+        }
+
+        draw() {
+          ctx.globalAlpha = this.opacity;
+          ctx.beginPath();
+          // Warna pelangi dinamis dengan hue yang berubah global
+          const finalHue = (hue + this.hueOffset) % 360;
+          ctx.fillStyle = `hsl(${finalHue}, 85%, 60%)`;
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+          // tambahkan efek kilau kecil
+          ctx.beginPath();
+          ctx.fillStyle = `hsla(${finalHue}, 90%, 75%, 0.6)`;
+          ctx.arc(this.x - 2, this.y - 2, this.size * 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        update() {
+          this.x += this.speedX;
+          this.y += this.speedY;
+          this.size *= this.shrink;
+          this.opacity -= 0.018;
+          if (this.opacity <= 0.02) this.opacity = 0;
+        }
+      }
+
+      function addParticlesFromEvent(clientX, clientY) {
+        if (!clientX || !clientY) return;
+        // jumlah partikel lebih meriah untuk sentuhan
+        let count = 8;
+        for (let i = 0; i < count; i++) {
+          let offsetX = (Math.random() - 0.5) * 18;
+          let offsetY = (Math.random() - 0.5) * 18;
+          let p = new Particle(clientX + offsetX, clientY + offsetY);
+          particlesArray.push(p);
+        }
+        // batasi jumlah partikel agar performa tetap lancar
+        if (particlesArray.length > 1100) {
+          particlesArray = particlesArray.slice(-900);
+        }
+      }
+
+      // Event mouse & touch untuk background interaktif
+      function handleMove(e) {
+        let clientX, clientY;
+        if (e.touches) {
+          isTouchDevice = true;
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+        mouse.x = clientX;
+        mouse.y = clientY;
+        addParticlesFromEvent(clientX, clientY);
+      }
+
+      function handleStart(e) {
+        let clientX, clientY;
+        if (e.touches) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+        addParticlesFromEvent(clientX, clientY);
+        // agar partikel lebih banyak saat mulai sentuh
+        for (let i = 0; i < 5; i++) {
+          addParticlesFromEvent(clientX + (Math.random() - 0.5) * 15, clientY + (Math.random() - 0.5) * 15);
+        }
+      }
+
+      // animasi loop
+      function animateBackground() {
+        if (!ctx) return;
+        // efek transparan untuk trail memudar (efek jejak magic)
+        ctx.fillStyle = 'rgba(6, 20, 30, 0.25)';   // gradasi gelap transparan biar partikel menonjol
+        ctx.fillRect(0, 0, w, h);
+        
+        hue = (hue + 1.2) % 360;  // pergeseran warna
+        
+        // update dan draw partikel
+        for (let i = particlesArray.length-1; i >= 0; i--) {
+          const p = particlesArray[i];
+          p.update();
+          p.draw();
+          if (p.opacity <= 0.03 || p.size <= 0.5) {
+            particlesArray.splice(i,1);
+          }
+        }
+        
+        // tambahkan efek bintang floating kecil jika partikel sedikit
+        if (particlesArray.length < 70 && Math.random() < 0.03) {
+          let randX = Math.random() * w;
+          let randY = Math.random() * h;
+          for (let s = 0; s < 2; s++) {
+            particlesArray.push(new Particle(randX, randY));
+          }
+        }
+        
+        requestAnimationFrame(animateBackground);
+      }
+
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+      });
+
+      // Pasang listener pada canvas
+      canvas.addEventListener('mousemove', handleMove);
+      canvas.addEventListener('mousedown', handleStart);
+      canvas.addEventListener('touchmove', handleMove);
+      canvas.addEventListener('touchstart', handleStart);
+      // agar tidak mengganggu game, canvas pointer-events auto sudah diatur di CSS
+        
+      resizeCanvas();
+      animateBackground();
+    })();
+
+    // ======================= 2. GAME TEBAK HURUF =======================
+    const synth = window.speechSynthesis;
+    function speak(text, onEnd = null) {
+      if (!synth) return;
+      synth.cancel(); // hentikan antrian bicara sebelumnya
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "id-ID";
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      if (onEnd) utterance.onend = onEnd;
+      synth.speak(utterance);
+    }
+
+    // huruf kapital A-Z
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    const boxesContainer = document.getElementById("boxes");
+    const targetLetterSpan = document.getElementById("targetLetter");
+    const messageDiv = document.getElementById("message");
+    const scoreDiv = document.getElementById("score");
+    const btnNextEl = document.getElementById("btnNext");
+    const btnRepeatEl = document.getElementById("btnRepeat");
+
+    let currentCorrectLetter = null;
+    let currentScore = 0;
+    let lockSelection = false;    // mencegah spam klik saat animasi suara
+
+    // fungsi acak array
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // memainkan suara pertanyaan dengan sapaan interaktif
+    function speakQuestion() {
+      if (!currentCorrectLetter) return;
+      const text = "Ayo tebak huruf " + currentCorrectLetter;
+      speak(text);
+    }
+
+    // membuat soal baru (10 pilihan acak)
+    function generateNewQuestion() {
+      if (lockSelection) return;
+      lockSelection = true;
+      messageDiv.innerHTML = "✨ Siap-siap... ✨";
+      messageDiv.style.color = "#2c5f2d";
+      
+      // bersihkan container
+      boxesContainer.innerHTML = "";
+      
+      // ambil 10 huruf unik secara acak dari alfabet
+      let shuffledAll = shuffleArray([...letters]);
+      let selectedOptions = shuffledAll.slice(0, 10);
+      // pilih jawaban benar secara acak dari 10 opsi tersebut
+      currentCorrectLetter = selectedOptions[Math.floor(Math.random() * selectedOptions.length)];
+      targetLetterSpan.textContent = currentCorrectLetter;
+      
+      // buat kotak-kotak huruf
+      selectedOptions.forEach(letter => {
+        const box = document.createElement("div");
+        box.className = "box";
+        box.textContent = letter;
+        // event listener dipasang langsung
+        box.addEventListener("click", () => handleAnswer(letter, box));
+        boxesContainer.appendChild(box);
+      });
+      
+      // suara pertanyaan (setelah 0.1 detik agar UI siap)
+      setTimeout(() => {
+        speakQuestion();
+        lockSelection = false;
+        messageDiv.innerHTML = "🔊 Dengarkan baik-baik, lalu klik huruf!";
+        messageDiv.style.color = "#475569";
+      }, 80);
+    }
+    
+    // efek kilat visual pada kotak
+    function flashBox(boxElement, isCorrect) {
+      if (!boxElement) return;
+      const originalBg = boxElement.style.background;
+      const originalBorder = boxElement.style.borderColor;
+      boxElement.style.transition = "0.05s";
+      if (isCorrect) {
+        boxElement.style.background = "#bbf7d0";
+        boxElement.style.borderColor = "#16a34a";
+      } else {
+        boxElement.style.background = "#ffc9c9";
+        boxElement.style.borderColor = "#dc2626";
+      }
+      setTimeout(() => {
+        boxElement.style.background = originalBg;
+        boxElement.style.borderColor = originalBorder;
+        boxElement.style.transition = "";
+      }, 200);
+    }
+    
+    function handleAnswer(chosenLetter, boxElement) {
+      if (lockSelection) {
+        // jika sedang dalam proses suara atau lock, kasih hint ringan
+        messageDiv.innerHTML = "⏳ Tunggu sebentar, dulu ya...";
+        setTimeout(() => {
+          if (messageDiv.innerHTML === "⏳ Tunggu sebentar, dulu ya...") 
+            messageDiv.innerHTML = "🎧 Klik huruf setelah suara selesai!";
+        }, 800);
+        return;
+      }
+      if (!currentCorrectLetter) return;
+      
+      // jika benar
+      if (chosenLetter === currentCorrectLetter) {
+        // feedback ceria
+        const successMsg = `Hebat Zhafran! Jawaban benar, itu huruf ${currentCorrectLetter}. Selamat! ✨`;
+        messageDiv.innerHTML = successMsg;
+        messageDiv.style.color = "#15803d";
+        currentScore++;
+        scoreDiv.innerHTML = `🏆 Skor: ${currentScore}`;
+        speak(successMsg);
+        flashBox(boxElement, true);
+        
+        // tambahkan partikel ekstra meriah dari background (semangat)
+        triggerBonusParticles();
+        
+        // otomatis setelah 1.4 detik pindah soal (biar flow anak tetap asyik)
+        lockSelection = true;
+        setTimeout(() => {
+          generateNewQuestion();
+          lockSelection = false;
+        }, 1400);
+      } else {
+        // jawaban salah
+        const failMsg = `Masih salah Bujang. ${chosenLetter} bukan huruf ${currentCorrectLetter}. Coba lagi! 💪`;
+        messageDiv.innerHTML = failMsg;
+        messageDiv.style.color = "#b91c1c";
+        speak(failMsg);
+        flashBox(boxElement, false);
+        // tidak mengurangi skor, hanya memberi semangat
+        // sedikit efek getar gemulai pada kotak salah (opsional)
+        if (boxElement) {
+          boxElement.style.transform = "translateX(4px)";
+          setTimeout(() => { if(boxElement) boxElement.style.transform = ""; }, 120);
+        }
+        // tidak auto next, anak bebas memilih ulang huruf yang benar hingga jawab
+        // tapi agar tidak lock, biarkan tetap bisa memilih jawaban lain
+      }
+    }
+    
+    // Fungsi untuk memicu partikel ekstra dari canvas (background ikut meriah)
+    function triggerBonusParticles() {
+      // akses canvas global dan buat partikel di tengah area game
+      const canvasElem = document.getElementById('particleCanvas');
+      if (!canvasElem) return;
+      // cari posisi tengah layar untuk efek confetti partikel
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2.5;
+      // injeksi partikel dengan cara panggil event tiruan? tapi kita bisa langsung memanfaatkan fungsi addParticles?
+      // namun fungsi addParticles tidak terekspos global; kita buat custom event agar tetap ramah: kirim event simulasi?
+      // alternatif: buat event baru di canvas yang memicu partikel. Lebih elegan kita panggil event dari dalam
+      const fakeMouseEvent = new MouseEvent('mousemove', {
+        clientX: centerX + (Math.random() - 0.5) * 80,
+        clientY: centerY + (Math.random() - 0.5) * 60,
+        bubbles: true
+      });
+      canvasElem.dispatchEvent(fakeMouseEvent);
+      // tambah lagi beberapa partikel dengan mengirim beberapa event kecil
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          const extraEvent = new MouseEvent('mousemove', {
+            clientX: centerX + (Math.random() - 0.5) * 100,
+            clientY: centerY + (Math.random() - 0.5) * 70,
+            bubbles: true
+          });
+          canvasElem.dispatchEvent(extraEvent);
+        }, i * 50);
+      }
+    }
+    
+    // event tombol berikutnya (manual next)
+    btnNextEl.addEventListener("click", () => {
+      if (lockSelection) {
+        messageDiv.innerHTML = "⏳ Tunggu sebentar, suara sedang diputar...";
+        return;
+      }
+      generateNewQuestion();
+    });
+    
+    btnRepeatEl.addEventListener("click", () => {
+      if (!currentCorrectLetter) return;
+      if (lockSelection) {
+        messageDiv.innerHTML = "🔊 Sebentar, soal sedang berganti...";
+        return;
+      }
+      speakQuestion();
+      messageDiv.innerHTML = "🔊 Memutar ulang suara huruf...";
+      setTimeout(() => {
+        if(messageDiv.innerHTML === "🔊 Memutar ulang suara huruf...") 
+          messageDiv.innerHTML = "🎤 Klik huruf yang kamu dengar!";
+      }, 1300);
+    });
+    
+    // Inisialisasi pertama
+    generateNewQuestion();
+    
+    // tambahkan efek interaksi canvas supaya semakin interaktif, tombol juga tidak mengganggu partikel
+    // pastikan saat klik tombol atau kotak, canvas tetap bisa menangkap sentuhan? canvas di background dengan pointer-events auto,
+    // namun tombol dan kotak akan menangkap event lebih dulu karena z-index dan berada di atas.
+    // Tidak masalah, pengguna bisa menyentuh area kosong untuk partikel.
+    
+    // sentuhan di area game-card tetap mengirim event ke canvas karena canvas di belakang, tapi sentuhan tepat di tombol tidak menambah partikel. 
+    // untuk pengalaman lebih baik, saat anak menekan kotak huruf sekaligus kita panggil partikel kecil untuk menambah keceriaan
+    document.querySelectorAll('.box').forEach(box => {
+      // karena box dibuat dinamis, kita gunakan event delegation di container
+    });
+    // delegasi untuk partikel saat menyentuh kotak (tambahan efek)
+    boxesContainer.addEventListener('click', (e) => {
+      const boxDiv = e.target.closest('.box');
+      if (boxDiv) {
+        // menambah efek partikel kecil dari canvas melalui event tiruan
+        const canvasBg = document.getElementById('particleCanvas');
+        if (canvasBg) {
+          const rect = boxDiv.getBoundingClientRect();
+          const centerBoxX = (rect.left + rect.right) / 2;
+          const centerBoxY = (rect.top + rect.bottom) / 2;
+          const particleEvent = new MouseEvent('mousemove', {
+            clientX: centerBoxX,
+            clientY: centerBoxY,
+            bubbles: true
+          });
+          canvasBg.dispatchEvent(particleEvent);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+```

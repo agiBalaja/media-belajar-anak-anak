@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iqro' 1 - Huruf Hijaiyah</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { color: #2c3e50; margin-bottom: 5px; font-size: 24px; }
+        p { color: #34495e; margin-top: 0; font-size: 14px; }
+
+        /* Teks view di atas (huruf Arab) */
+        .ejaan-container {
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background-color: #ecf0f1;
+            border-radius: 50px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            font-size: 60px;      /* lebih besar untuk huruf Arab */
+            font-weight: bold;
+            color: #2c3e50;
+            border: 2px dashed #3498db;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+            box-sizing: border-box;
+            letter-spacing: 10px;  /* spasi antar huruf Arab */
+            font-family: 'Amiri', 'Traditional Arabic', 'Arial', sans-serif; /* dukungan font Arab */
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 10px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* Kartu huruf (tetap kecil) */
+        .huruf-card {
+            background-color: white;
+            border: 3px solid #3498db;
+            border-radius: 12px;
+            font-size: 40px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            font-family: 'Amiri', 'Traditional Arabic', 'Arial', sans-serif;
+        }
+        .huruf-card:hover {
+            transform: scale(1.05);
+            background-color: #ebf5fb;
+            box-shadow: 0 5px 8px rgba(0,0,0,0.15);
+        }
+        .huruf-card:active {
+            transform: scale(0.95);
+            background-color: #d4e6f1;
+        }
+
+        .info-iqro {
+            font-size: 16px;
+            background-color: #fef9e7;
+            padding: 6px 18px;
+            border-radius: 40px;
+            margin: 15px 0 5px;
+            color: #d35400;
+            border: 1px solid #f39c12;
+        }
+
+        /* Tombol reset dipindah ke bawah grid */
+        .reset-btn {
+            margin-top: 20px;      /* jarak dari grid */
+            margin-bottom: 10px;
+            padding: 8px 25px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .reset-btn:hover {
+            background-color: #2980b9;
+        }
+        .reset-btn:active {
+            transform: scale(0.95);
+        }
+
+        footer {
+            margin-top: 10px;
+            color: #7f8c8d;
+            font-size: 0.85em;
+        }
+    </style>
+    <!-- Tambahkan font Arab untuk tampilan lebih baik -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <h1>📖 Iqro' 1 - Baris 3 Huruf</h1>
+    <p>Klik huruf (huruf Arab muncul di atas). Setelah 3 huruf, rangkaian dieja otomatis.</p>
+
+    <!-- Teks view di atas grid (menampilkan huruf Arab) -->
+    <div class="ejaan-container" id="teksEjaan">_ _ _</div>
+    
+        <!-- Tombol reset di bawah grid -->
+    <button class="reset-btn" id="resetEjaan">Baris Baru (Reset)</button>
+
+
+    <!-- Grid huruf -->
+    <div class="grid-container" id="game-board"></div>
+
+
+    <div class="info-iqro">🔊 Maksimal 3 huruf. Setiap klik: suara nama huruf. Saat genap 3: rangkaian diucapkan.</div>
+
+    <footer>Klik huruf → huruf Arab ditampilkan. Contoh: ب ت ث → suara "ba ta tsa".</footer>
+
+    <script>
+        // Daftar huruf hijaiyah (huruf Arab dan nama file)
+        const hijaiyah = [
+            { huruf: 'ا', suara: 'alif.mp3' },
+            { huruf: 'ب', suara: 'ba.mp3' },
+            { huruf: 'ت', suara: 'ta.mp3' },
+            { huruf: 'ث', suara: 'tsa.mp3' },
+            { huruf: 'ج', suara: 'jim.mp3' },
+            { huruf: 'ح', suara: 'ha.mp3' },
+            { huruf: 'خ', suara: 'kho.mp3' },
+            { huruf: 'د', suara: 'dal.mp3' },
+            { huruf: 'ذ', suara: 'dzal.mp3' },
+            { huruf: 'ر', suara: 'ro.mp3' },
+            { huruf: 'ز', suara: 'zai.mp3' },
+            { huruf: 'س', suara: 'sin.mp3' },
+            { huruf: 'ش', suara: 'syin.mp3' },
+            { huruf: 'ص', suara: 'shod.mp3' },
+            { huruf: 'ض', suara: 'dhod.mp3' },
+            { huruf: 'ط', suara: 'tho.mp3' },
+            { huruf: 'ظ', suara: 'dzho.mp3' },
+            { huruf: 'ع', suara: 'ain.mp3' },
+            { huruf: 'غ', suara: 'ghoin.mp3' },
+            { huruf: 'ف', suara: 'fa.mp3' },
+            { huruf: 'ق', suara: 'qof.mp3' },
+            { huruf: 'ك', suara: 'kaf.mp3' },
+            { huruf: 'ل', suara: 'lam.mp3' },
+            { huruf: 'م', suara: 'mim.mp3' },
+            { huruf: 'ن', suara: 'nun.mp3' },
+            { huruf: 'و', suara: 'wau.mp3' },
+            { huruf: 'هـ', suara: 'ha_besar.mp3' },
+            { huruf: 'ء', suara: 'hamzah.mp3' },
+            { huruf: 'ي', suara: 'ya.mp3' }
+        ];
+
+        const board = document.getElementById('game-board');
+        const teksEjaan = document.getElementById('teksEjaan');
+        const resetBtn = document.getElementById('resetEjaan');
+
+        // Riwayat untuk ditampilkan (huruf Arab)
+        let riwayatHuruf = [];
+
+        // Fungsi konversi nama file ke teks latin (untuk suara)
+        function getNamaLatin(namaFile) {
+            return namaFile.replace('.mp3', '').replace(/_/g, ' ');
+        }
+
+        // Fungsi memperbarui tampilan teks dengan huruf Arab
+        function updateTampilanEjaan() {
+            if (riwayatHuruf.length === 0) {
+                teksEjaan.textContent = '_ _ _';
+            } else {
+                // Gabungkan huruf Arab dengan spasi (atau bullet)
+                teksEjaan.textContent = riwayatHuruf.join(' • ');
+            }
+        }
+
+        // Fungsi mengucapkan teks (speech synthesis)
+        function ucapkan(teks) {
+            const utterance = new SpeechSynthesisUtterance(teks);
+            utterance.lang = 'id-ID';
+            utterance.onerror = () => console.log('Speech error');
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Fungsi untuk mengecek dan mengucapkan rangkaian 3 huruf (dalam latin)
+        function cekDanUcapRangkaian() {
+            if (riwayatHuruf.length === 3) {
+                // Ambil 3 huruf terakhir dari data hijaiyah berdasarkan urutan klik
+                // Kita perlu menyimpan juga teks latinnya. Kita bisa simpan array terpisah untuk latin.
+                // Alternatif: saat klik, kita simpan juga latinnya. Kita buat array riwayatLatin.
+                // Di sini kita sudah memiliki akses ke item yang diklik, tapi setelah di-shift kita kehilangan.
+                // Lebih baik kita simpan dua array: riwayatHuruf (Arab) dan riwayatLatin.
+                // Tapi untuk kemudahan, kita bisa buat objek riwayat yang berisi { arab, latin }.
+            }
+        }
+
+        // Kita modifikasi: simpan riwayat sebagai array of objects { arab, latin }
+        let riwayat = [];
+
+        function updateTampilanDanSuara() {
+            // Tampilkan Arab
+            if (riwayat.length === 0) {
+                teksEjaan.textContent = '_ _ _';
+            } else {
+                teksEjaan.textContent = riwayat.map(item => item.arab).join(' • ');
+            }
+
+            // Jika panjang 3, ucapkan rangkaian latin
+            if (riwayat.length === 3) {
+                const rangkaianLatin = riwayat.map(item => item.latin).join(' ');
+                ucapkan(rangkaianLatin);
+            }
+        }
+
+        // Generate kartu huruf
+        hijaiyah.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'huruf-card';
+            card.innerText = item.huruf;
+
+            card.onclick = () => {
+                // 1. Suara individu (latin)
+                const latin = getNamaLatin(item.suara);
+                ucapkan(latin);
+
+                // 2. Tambah ke riwayat (maks 3)
+                riwayat.push({ arab: item.huruf, latin: latin });
+                if (riwayat.length > 3) {
+                    riwayat.shift(); // hapus paling lama
+                }
+
+                // 3. Update tampilan dan cek suara rangkaian
+                updateTampilanDanSuara();
+            };
+
+            board.appendChild(card);
+        });
+
+        // Tombol reset
+        resetBtn.addEventListener('click', () => {
+            riwayat = [];
+            updateTampilanDanSuara();
+        });
+    </script>
+</body>
+</html>

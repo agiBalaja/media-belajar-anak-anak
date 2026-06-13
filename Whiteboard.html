@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Canvas Lukis Lebar + Eraser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f2f5;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Toolbar utama dengan efek glass */
+        .toolbar {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+            padding: 12px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 10px;
+        }
+
+        .color-btn {
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: transform 0.15s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .color-btn.active {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px white, 0 0 0 5px #2e7bff;
+        }
+
+        /* Warna tombol */
+        #black { background: #1e1e2f; }
+        #red { background: #ff5e5e; }
+        #green { background: #2ecc71; }
+        #blue { background: #5e9eff; }
+        #orange { background: #ff9f4b; }
+        #pink { background: #ff80ab; }
+
+        /* Tombol eraser */
+        .eraser-btn {
+            background: white;
+            border: 2px solid #ccd7e6;
+            width: 46px;
+            height: 46px;
+            border-radius: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: 0.15s;
+        }
+
+        .eraser-btn.active {
+            background: #e0e8f5;
+            border-color: #2e7bff;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(46,123,255,0.3);
+        }
+
+        /* Slider ketebalan */
+        .thickness-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f0f4fc;
+            padding: 6px 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .thickness-control label {
+            font-weight: 500;
+            color: #1e2b3c;
+            font-size: 0.9rem;
+        }
+
+        .thickness-control input {
+            width: 160px;
+            height: 6px;
+            border-radius: 10px;
+            background: #d0daea;
+            -webkit-appearance: none;
+        }
+
+        .thickness-control input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid #2e7bff;
+            cursor: pointer;
+        }
+
+        .thickness-value {
+            min-width: 36px;
+            text-align: center;
+            font-weight: 600;
+            color: #2e405b;
+        }
+
+        /* Tombol clear */
+        .clear-btn {
+            background: #2e405b;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 10px 28px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0,20,40,0.2);
+            transition: 0.15s;
+            font-size: 1rem;
+            margin-left: auto;
+        }
+
+        .clear-btn:hover {
+            background: #1f2f44;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.25);
+        }
+
+        /* Container canvas penuh */
+        .canvas-container {
+            flex: 1;
+            background: #e5e9f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: 1400px;
+            max-height: 900px;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            border: 2px solid rgba(255,255,255,0.8);
+            cursor: crosshair;
+            touch-action: none; /* penting untuk mencegah scroll saat menggambar */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 800px) {
+            .toolbar {
+                padding: 12px 16px;
+                gap: 12px;
+            }
+            .color-btn {
+                width: 38px;
+                height: 38px;
+            }
+            .thickness-control {
+                padding: 4px 12px;
+            }
+            .thickness-control input {
+                width: 100px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .toolbar-section {
+                justify-content: center;
+            }
+            .clear-btn {
+                margin-left: 0;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <!-- Bagian warna -->
+        <div class="toolbar-section">
+            <div class="color-palette">
+                <button class="color-btn" id="black" onclick="setColor('black')" ontouchstart="setColor('black')"></button>
+                <button class="color-btn" id="red" onclick="setColor('red')" ontouchstart="setColor('red')"></button>
+                <button class="color-btn" id="green" onclick="setColor('green')" ontouchstart="setColor('green')"></button>
+                <button class="color-btn" id="blue" onclick="setColor('blue')" ontouchstart="setColor('blue')"></button>
+                <button class="color-btn" id="orange" onclick="setColor('orange')" ontouchstart="setColor('orange')"></button>
+                <button class="color-btn" id="pink" onclick="setColor('pink')" ontouchstart="setColor('pink')"></button>
+            </div>
+        </div>
+
+        <!-- Eraser & ketebalan -->
+        <div class="toolbar-section">
+            <button class="eraser-btn" id="eraserBtn" onclick="toggleEraser()" ontouchstart="toggleEraser()">🧽</button>
+            
+            <div class="thickness-control">
+                <label>⚫</label>
+                <input type="range" id="thicknessSlider" min="2" max="30" value="5" step="1">
+                <span class="thickness-value" id="thicknessDisplay">5</span>
+            </div>
+        </div>
+
+        <!-- Clear button -->
+        <button class="clear-btn" onclick="clearCanvas()">
+            <span>🗑️</span> Bersihkan
+        </button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="canvas" width="1200" height="800"></canvas>
+    </div>
+
+    <script>
+        (function() {
+            // ========== ELEMEN ==========
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Pengaturan awal
+            let currentColor = '#1e1e2f'; // black
+            let lineWidth = 5;
+            let eraserMode = false;
+
+            // State menggambar
+            let isDrawing = false;
+            let lastX = 0, lastY = 0;
+
+            // Multi-touch storage: { id, x, y }[]
+            let activeTouches = [];
+
+            // Inisialisasi canvas
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = lineWidth;
+
+            // ========== KONVERSI KOORDINAT (canvas internal vs CSS) ==========
+            function getCanvasCoords(clientX, clientY) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;   // rasio internal / CSS
+                const scaleY = canvas.height / rect.height;
+                const canvasX = (clientX - rect.left) * scaleX;
+                const canvasY = (clientY - rect.top) * scaleY;
+                // Batasi agar tetap di dalam area canvas
+                return {
+                    x: Math.min(canvas.width - 1, Math.max(0, canvasX)),
+                    y: Math.min(canvas.height - 1, Math.max(0, canvasY))
+                };
+            }
+
+            // ========== FUNGSI GAMBAR ==========
+            function startDrawing(x, y) {
+                isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                lastX = x;
+                lastY = y;
+                // Untuk feedback titik awal (opsional)
+                ctx.fillStyle = eraserMode ? '#ffffff' : currentColor;
+                ctx.beginPath();
+                ctx.arc(x, y, lineWidth/2, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            function draw(x, y) {
+                if (!isDrawing) return;
+                ctx.strokeStyle = eraserMode ? '#ffffff' : currentColor;
+                ctx.lineWidth = lineWidth;
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                lastX = x;
+                lastY = y;
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+                ctx.beginPath(); // reset path
+            }
+
+            // ========== MOUSE EVENTS ==========
+            canvas.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const { x, y } = getCanvasCoords(e.clientX, e.clientY);
+                startDrawing(x, y);
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const { x, y } = getCanvasCoords(e.clientX, e.clientY);
+                draw(x, y);
+            });
+
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+
+            // ========== TOUCH EVENTS (multi-touch) ==========
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touches = e.changedTouches;
+                for (let i = 0; i < touches.length; i++) {
+                    const touch = touches[i];
+                    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
+                    activeTouches.push({
+                        id: touch.identifier,
+                        x, y
+                    });
+                    // Gambar titik kecil untuk masing-masing jari
+                    ctx.fillStyle = eraserMode ? '#ffffff' : currentColor;
+                    ctx.beginPath();
+                    ctx.arc(x, y, lineWidth/2, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touches = e.changedTouches;
+                for (let i = 0; i < touches.length; i++) {
+                    const touch = touches[i];
+                    const idx = activeTouches.findIndex(t => t.id === touch.identifier);
+                    if (idx === -1) continue;
+
+                    const prev = activeTouches[idx];
+                    const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
+
+                    // Gambar garis dari posisi sebelumnya ke posisi baru
+                    ctx.strokeStyle = eraserMode ? '#ffffff' : currentColor;
+                    ctx.lineWidth = lineWidth;
+                    ctx.beginPath();
+                    ctx.moveTo(prev.x, prev.y);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+
+                    // Update posisi
+                    activeTouches[idx] = { id: touch.identifier, x, y };
+                }
+            });
+
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const touches = e.changedTouches;
+                for (let i = 0; i < touches.length; i++) {
+                    const touch = touches[i];
+                    const idx = activeTouches.findIndex(t => t.id === touch.identifier);
+                    if (idx !== -1) {
+                        activeTouches.splice(idx, 1);
+                    }
+                }
+                if (activeTouches.length === 0) {
+                    ctx.beginPath(); // reset path global
+                }
+            });
+
+            canvas.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                activeTouches = [];
+                ctx.beginPath();
+            });
+
+            // ========== FUNGSI WARNA & ERASER ==========
+            window.setColor = function(colorName) {
+                eraserMode = false;
+                document.getElementById('eraserBtn').classList.remove('active');
+                // Mapping nama ke kode hex
+                const colorMap = {
+                    'black': '#1e1e2f',
+                    'red': '#ff5e5e',
+                    'green': '#2ecc71',
+                    'blue': '#5e9eff',
+                    'orange': '#ff9f4b',
+                    'pink': '#ff80ab'
+                };
+                currentColor = colorMap[colorName] || '#1e1e2f';
+                // Update active class pada tombol warna
+                document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                const activeBtn = document.getElementById(colorName);
+                if (activeBtn) activeBtn.classList.add('active');
+            };
+
+            window.toggleEraser = function() {
+                eraserMode = !eraserMode;
+                const btn = document.getElementById('eraserBtn');
+                if (eraserMode) {
+                    btn.classList.add('active');
+                    // Hapus active dari semua tombol warna
+                    document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                } else {
+                    btn.classList.remove('active');
+                    // Kembalikan ke warna terakhir (misal black)
+                    setColor('black');
+                }
+            };
+
+            window.clearCanvas = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            };
+
+            // ========== SLIDER KETEBALAN ==========
+            const slider = document.getElementById('thicknessSlider');
+            const display = document.getElementById('thicknessDisplay');
+            slider.addEventListener('input', (e) => {
+                lineWidth = parseInt(e.target.value);
+                display.textContent = lineWidth;
+                ctx.lineWidth = lineWidth; // update langsung
+            });
+
+            // Set default active color
+            window.addEventListener('load', () => {
+                setColor('black');
+                // Set default slider value
+                slider.value = lineWidth;
+                display.textContent = lineWidth;
+            });
+
+            // Opsional: resize handler untuk menjaga ukuran canvas internal jika container berubah?
+            // Agar canvas tidak pecah, kita biarkan ukuran tetap 1200x800, tampil proporsional dengan CSS.
+            // Jika ingin menyesuaikan ukuran internal dengan container (agar lebih tajam), kita bisa menambahkan
+            // resize observer, tapi untuk demo ini biarkan sederhana.
+
+            // Pastikan ctx lineWidth selalu update (slider sudah mengubah lineWidth)
+            // Namun saat eraser toggling, kita tetap pakai lineWidth yang sama.
+        })();
+    </script>
+</body>
+</html>

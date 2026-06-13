@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Belajar Mengeja dan Membaca </title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px 25px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+        .input-area {
+            margin-bottom: 25px;
+        }
+        #wordInput {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            text-align: center;
+            border: 3px solid #667eea;
+            border-radius: 50px;
+            outline: none;
+            background: #f9f9ff;
+            color: #333;
+            letter-spacing: 2px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 10px;
+            margin: 25px 0;
+        }
+        .letter-btn {
+            background: #667eea;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 15px 0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 5px 0 #4c63b6;
+        }
+        .letter-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #4c63b6;
+        }
+        .letter-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .action-btn {
+            background: #48c774;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 12px 30px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            box-shadow: 0 4px 0 #2e7d4e;
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+        .action-btn.eja {
+            background: #ffaa5e;
+            box-shadow: 0 4px 0 #c67c3a;
+        }
+        .action-btn.reset {
+            background: #f14668;
+            box-shadow: 0 4px 0 #b13b54;
+        }
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        .action-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        footer {
+            margin-top: 30px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 500px) {
+            .button-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            .letter-btn {
+                font-size: 1.2rem;
+                padding: 12px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Belajar Membaca & Mengeja</h1>
+        <div class="subtitle">Tekan huruf, dengarkan bunyinya, lalu eja kata dengan kecepatan lambat</div>
+
+        <div class="input-area">
+            <input type="text" id="wordInput" placeholder="Kata akan muncul di sini" readonly>
+        </div>
+
+        <!-- Tombol huruf A-Z -->
+        <div class="button-grid" id="letterButtons"></div>
+
+        <!-- Tombol aksi -->
+        <div class="action-buttons">
+            <button class="action-btn" id="speakWordBtn">🔊 Baca Kata</button>
+            <button class="action-btn eja" id="spellWordBtn">🔡 Eja (Lambat)</button>
+            <button class="action-btn reset" id="clearBtn">🗑 Hapus Semua</button>
+        </div>
+        <div style="margin-top: 10px;">
+            <button class="action-btn" id="backspaceBtn" style="background:#9b9b9b; box-shadow:0 4px 0 #6b6b6b;">⌫ Hapus Satu</button>
+        </div>
+        <footer>Tekan huruf → masuk ke kolom dan berbunyi. Eja dengan kecepatan lambat untuk belajar.</footer>
+    </div>
+
+    <script>
+        // Peta ejaan huruf dalam bahasa Indonesia (nama huruf)
+        const ejaanHuruf = {
+            'a': 'a', 'b': 'be', 'c': 'ce', 'd': 'de', 'e': 'e', 'f': 'ef', 'g': 'ge',
+            'h': 'ha', 'i': 'i', 'j': 'je', 'k': 'ka', 'l': 'el', 'm': 'em', 'n': 'en',
+            'o': 'o', 'p': 'pe', 'q': 'ki', 'r': 'er', 's': 'es', 't': 'te', 'u': 'u',
+            'v': 've', 'w': 'we', 'x': 'eks', 'y': 'ye', 'z': 'zet'
+        };
+
+        // Ambil elemen input
+        const wordInput = document.getElementById('wordInput');
+        const letterButtonsContainer = document.getElementById('letterButtons');
+
+        // Buat tombol huruf A-Z
+        const hurufKecil = 'abcdefghijklmnopqrstuvwxyz'.split('');
+        hurufKecil.forEach(huruf => {
+            const btn = document.createElement('button');
+            btn.classList.add('letter-btn');
+            btn.textContent = huruf.toUpperCase();
+            btn.setAttribute('data-letter', huruf);
+            btn.setAttribute('aria-label', `Huruf ${huruf}`);
+            btn.addEventListener('click', () => tambahHuruf(huruf));
+            letterButtonsContainer.appendChild(btn);
+        });
+
+        // Fungsi untuk menambahkan huruf ke input dan membunyikannya (kecepatan normal)
+        function tambahHuruf(huruf) {
+            wordInput.value += huruf;
+            ucapkan(ejaanHuruf[huruf] || huruf, 0.9); // rate normal
+        }
+
+        // Fungsi umum untuk mengucapkan teks dengan rate yang bisa diatur
+        function ucapkan(teks, rate = 0.9) {
+            if (!teks) return;
+            // Hentikan ucapan yang sedang berlangsung
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(teks);
+            utterance.lang = 'id-ID';
+            utterance.rate = rate;      // kecepatan bicara (0.1 - 10)
+            utterance.pitch = 1;
+
+            // Pilih voice Indonesia jika tersedia
+            const voices = window.speechSynthesis.getVoices();
+            const voiceID = voices.find(voice => voice.lang.includes('id'));
+            if (voiceID) {
+                utterance.voice = voiceID;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Inisialisasi voice (untuk beberapa browser perlu menunggu)
+        window.speechSynthesis.onvoiceschanged = () => {
+            // Kosong, hanya untuk memastikan voice dimuat
+        };
+
+        // Tombol Baca Kata (membaca seluruh kata sebagai satu kesatuan, rate normal)
+        document.getElementById('speakWordBtn').addEventListener('click', () => {
+            const kata = wordInput.value.trim();
+            if (kata === '') {
+                alert('Masukkan beberapa huruf terlebih dahulu.');
+                return;
+            }
+            ucapkan(kata, 0.9);
+        });
+
+        // Tombol Eja (membaca huruf demi huruf sesuai ejaan, rate lambat)
+        document.getElementById('spellWordBtn').addEventListener('click', () => {
+            const kata = wordInput.value.trim();
+            if (kata === '') {
+                alert('Masukkan beberapa huruf untuk dieja.');
+                return;
+            }
+            // Bangun string ejaan: misal "a be ce"
+            const ejaanKata = kata.split('').map(h => ejaanHuruf[h] || h).join(' ');
+            ucapkan(ejaanKata, 0.5); // rate lambat 0.5
+        });
+
+        // Tombol Hapus Semua
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            wordInput.value = '';
+        });
+
+        // Tombol Hapus Satu karakter (backspace)
+        document.getElementById('backspaceBtn').addEventListener('click', () => {
+            wordInput.value = wordInput.value.slice(0, -1);
+        });
+    </script>
+</body>
+</html>
