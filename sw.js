@@ -2,6 +2,8 @@ const CACHE_NAME = 'belajar-ceria-v1';
 
 // Daftar file yang wajib disimpan (di-cache) untuk penggunaan offline
 const urlsToCache = [
+  'media-belajar-anak-anak'
+  'media-belajar-anak-anak/index.html'
   './',
   './index.html',
   // Jika kamu memisahkan CSS, tambahkan path-nya: './css/style.css',
