@@ -2,7 +2,7 @@
   "name": "Taman Belajar Ceria",
   "short_name": "Belajar Ceria",
   "description": "Kumpulan permainan edukasi anak yang interaktif dan menyenangkan.",
-  "start_url": "./",
+  "start_url": "media-belajar-anak-anak/",
   "display": "standalone",
   "background_color": "#F0F8FF",
   "theme_color": "#FF6B6B",
